@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>المصباح السري🧞</title>
+<link rel="icon" href="photo.jpg" type="image/png">
+<meta name="theme-color" content="#2f7f79">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <span></span>
+    <button class="round" id="theme" aria-label="تغيير الوضع">🌙</button>
+  </div>
+  <h1>فضفض، وأنا سامعك</h1>
+  <p class="sub">اكتب اللي جواك. رسالتك مجهولة تمامًا ومحدش هيعرف إنت مين.</p>
+
+  <div class="card">
+    <textarea id="msg" maxlength="10000" placeholder="اكتب رسالتك هنا..." aria-label="رسالتك"></textarea>
+    <div class="emojis" id="emojis"></div>
+    <div class="bar">
+      <button class="ghost" id="emojiBtn" aria-label="إيموجي">😊</button>
+      <span class="count grow" id="count"></span>
+      <button class="btn" id="send" disabled>إرسال</button>
+    </div>
+  </div>
+  <div class="status" id="status" hidden></div>
+  <p class="note">الرسالة بتتشفّر في جهازك قبل ما تتبعت، فمحدش غير صاحب الصفحة يقدر يقراها. لو إنت في خطر حقيقي، كلّم حد قريب منك أو متخصص.</p>
+</div>
+
+<script>
+/* ===== الإعدادات: غيّري القيم دي بس ===== */
+const CFG = {
+  ENCRYPT: true,                          // true = تشفير (الأقوى) | false = إرسال عادي للإيميل
+  WEB3FORMS_KEY: "47535a4a-cf49-4457-892f-6b184f71d2b2", // من web3forms.com
+  PUBLIC_KEY: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA8QpJBenn0Q0iK4+01Ej+3ZFPMM0fpT83Nj22CE+UjOf+fHZGWWirfWD6fMS8aF+ZkyZexyiTtRuwKGXRjhTWbmV8uZ6rkDOxZoU/RVRPJmn4rqEF9/9VxyroMzAWMRAOMYdRCm9phEwrSfVA8ZBnAK8IVSCJbChFb7agMtqlfNm0PjgsP25lrnOpKYme+YsWcjh/MVOojNm4KM9oge03jHxHblUy6gp7W+xwZOeUVyZyIU3LNydkZsTYZWm5fxietyrXWV2gGkOA+R0df/gPHz9JvLFRViWJAFGZRe003lNhHx4w9+4DVud9MdcTp60CWqLJk+sEclLHAKZuyDrQpwIDAQAB",       // من صفحة owner.html
+  MAX: 10000,
+  COOLDOWN_SEC: 30
+};
+/* ======================================= */
+
+const $ = id => document.getElementById(id);
+const msg = $("msg"), send = $("send"), statusEl = $("status");
+
+/* الوضع الغامق/الفاتح */
+const root = document.documentElement;
+function setTheme(t){ root.dataset.theme = t; $("theme").textContent = t === "dark" ? "☀️" : "🌙";
+  try{ localStorage.setItem("theme", t); }catch(e){} }
+let saved = null; try{ saved = localStorage.getItem("theme"); }catch(e){}
+setTheme(saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+$("theme").onclick = () => setTheme(root.dataset.theme === "dark" ? "light" : "dark");
+
+/* الإيموجي */
+["😊","😂","🥹","😢","😭","😍","🥰","😌","🙏","❤️","💔","😔","😞","😰","😡","🤍","🌸","✨","🔥","👍","💪","🤝","🌙","☀️","😴","🤔","😅","🙂","😇","🫶","💭","🌿"]
+  .forEach(e => { const b = document.createElement("button"); b.type = "button"; b.textContent = e;
+    b.onclick = () => { msg.focus(); msg.setRangeText(e, msg.selectionStart, msg.selectionEnd, "end"); update(); };
+    $("emojis").appendChild(b); });
+$("emojiBtn").onclick = () => $("emojis").classList.toggle("open");
+
+/* الخانة بتكبر لوحدها + العداد */
+function update(){
+  msg.style.height = "auto";
+  msg.style.height = Math.min(msg.scrollHeight, innerHeight * 0.6) + "px";
+  const n = msg.value.length;
+  $("count").textContent = n > CFG.MAX * 0.8 ? n + " / " + CFG.MAX : "";
+  send.disabled = msg.value.trim().length === 0;
+}
+msg.addEventListener("input", update); update();
+
+/* التشفير: AES-GCM للرسالة + RSA-OAEP للمفتاح */
+const b64 = b => { let s = "", a = new Uint8Array(b);
+  for (let i = 0; i < a.length; i += 8192) s += String.fromCharCode.apply(null, a.subarray(i, i + 8192));
+  return btoa(s); };
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function encrypt(text){
+  const pub = await crypto.subtle.importKey("spki", unb64(CFG.PUBLIC_KEY), {name:"RSA-OAEP", hash:"SHA-256"}, false, ["encrypt"]);
+  const aes = await crypto.subtle.generateKey({name:"AES-GCM", length:256}, true, ["encrypt"]);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({name:"AES-GCM", iv}, aes, new TextEncoder().encode(text));
+  const k = await crypto.subtle.encrypt({name:"RSA-OAEP"}, pub, await crypto.subtle.exportKey("raw", aes));
+  return "FD1." + b64(k) + "." + b64(iv) + "." + b64(ct) + "~";
+}
+
+function show(text, err){ statusEl.hidden = false; statusEl.className = "status" + (err ? " err" : ""); statusEl.textContent = text; }
+
+send.onclick = async () => {
+  const text = msg.value.trim(); if (!text) return;
+  let last = 0; try{ last = +localStorage.getItem("fd_last") || 0; }catch(e){}
+  const wait = Math.ceil(CFG.COOLDOWN_SEC - (Date.now() - last) / 1000);
+  if (wait > 0) return show("استنى " + wait + " ثانية قبل ما تبعت رسالة تانية.", true);
+  send.disabled = true; show("بنبعت رسالتك...");
+  try{
+    const body = CFG.ENCRYPT ? await encrypt(text) : text;
+    const fd = new FormData();
+    fd.append("access_key", CFG.WEB3FORMS_KEY);
+    fd.append("subject", "رسالة جديدة مجهولة");
+    fd.append("from_name", "فضفض");
+    fd.append("message", body);
+    const r = await fetch("https://api.web3forms.com/submit", {method:"POST", body:fd});
+    const j = await r.json();
+    if (!j.success) throw new Error(j.message || "failed");
+    try{ localStorage.setItem("fd_last", Date.now()); }catch(e){}
+    msg.value = ""; update(); $("emojis").classList.remove("open");
+    show("وصلت رسالتك 🤍 شكرًا إنك فضفضت.");
+  }catch(e){
+    show("حصلت مشكلة وماتبعتش الرسالة. راجع النت وجرّب تاني.", true); send.disabled = false;
+  }
+};
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
