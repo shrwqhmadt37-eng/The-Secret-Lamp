@@ -17,7 +17,7 @@
 <body>
 <div class="wrap">
   <div class="top">
-    <span></span>
+    <a class="ghost" href="owner.html">🔒 صاحب الموقع</a>
     <button class="round" id="theme" aria-label="تغيير الوضع">🌙</button>
   </div>
   <h1>فضفض، وأنا سامعك</h1>
@@ -33,16 +33,16 @@
     </div>
   </div>
   <div class="status" id="status" hidden></div>
-  <p class="note">رسالتك بتوصل لصاحب الصفحة بس، ومبنسجّلش اسمك ولا أي بيانات عنك. لو إنت في خطر حقيقي، كلّم حد قريب منك أو متخصص.</p>
-  <p class="note" style="text-align:center">نسخة 2 · من غير تشفير</p>
+  <p class="note">الرسالة بتتشفّر في جهازك قبل ما تتبعت، فمحدش غير صاحب الصفحة يقدر يقراها. لو إنت في خطر حقيقي، كلّم حد قريب منك أو متخصص.</p>
 </div>
 
+<script src="config.js"></script>
 <script>
 /* ===== الإعدادات ===== */
 const CFG = {
-  ENCRYPT: false,
+  ENCRYPT: true,
   WEB3FORMS_KEY: "47535a4a-cf49-4457-892f-6b184f71d2b2",
-  PUBLIC_KEY: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA8QpJBenn0Q0iK4+01Ej+3ZFPMM0fpT83Nj22CE+UjOf+fHZGWWirfWD6fMS8aF+ZkyZexyiTtRuwKGXRjhTWbmV8uZ6rkDOxZoU/RVRPJmn4rqEF9/9VxyroMzAWMRAOMYdRCm9phEwrSfVA8ZBnAK8IVSCJbChFb7agMtqlfNm0PjgsP25lrnOpKYme+YsWcjh/MVOojNm4KM9oge03jHxHblUy6gp7W+xwZOeUVyZyIU3LNydkZsTYZWm5fxietyrXWV2gGkOA+R0df/gPHz9JvLFRViWJAFGZRe003lNhHx4w9+4DVud9MdcTp60CWqLJk+sEclLHAKZuyDrQpwIDAQAB",
+  PUBLIC_KEY: SITE_CONFIG.PUBLIC_KEY,
   MAX: 10000,
   COOLDOWN_SEC: 30
 };
@@ -99,6 +99,7 @@ send.onclick = async () => {
   if (wait > 0) return show("استنى " + wait + " ثانية قبل ما تبعت رسالة تانية.", true);
   send.disabled = true; show("بنبعت رسالتك...");
   try{
+    if (CFG.ENCRYPT && !CFG.PUBLIC_KEY) throw new Error("الإعداد لسه ماتمش (config.js فاضي)");
     const body = CFG.ENCRYPT ? await encrypt(text) : text;
     const fd = new FormData();
     fd.append("access_key", CFG.WEB3FORMS_KEY);
