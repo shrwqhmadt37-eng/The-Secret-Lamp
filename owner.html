@@ -8,6 +8,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<style>
+.pwrap{position:relative;margin:8px 0}
+.pwrap input{width:100%;font:inherit;font-size:16px;color:inherit;background:transparent;border:1px solid var(--border);border-radius:12px;padding:10px;padding-inline-end:52px;margin:0}
+.eye{position:absolute;inset-inline-end:4px;top:50%;transform:translateY(-50%);width:44px;height:44px;border:0;background:transparent;font-size:20px;cursor:pointer}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -17,8 +22,8 @@
 
   <section class="card" id="setup">
     <h2>الإعداد (مرة واحدة بس)</h2>
-    <p class="sub">اختار باسورد قوي (10 حروف على الأقل) وافتكره كويس، لأنه لو ضاع الرسايل مش هتتفتح تاني.</p>
-    <input type="password" id="pw1" placeholder="اكتب الباسورد" autocomplete="new-password">
+    <p class="sub">اختار باسورد من حروف وأرقام (10 خانات على الأقل) وافتكره كويس، لأنه لو ضاع الرسايل مش هتتفتح تاني.</p>
+    <div class="pwrap"><input type="password" id="pw1" placeholder="حروف وأرقام (10 خانات على الأقل)" autocomplete="new-password" autocapitalize="off" spellcheck="false"><button type="button" class="eye" data-for="pw1" aria-label="إظهار أو إخفاء الباسورد">👁️</button></div>
     <button class="btn" id="gen">إنشاء المفاتيح</button>
     <div id="setupOut" hidden>
       <p><b>انسخي النص ده كله</b> وحطيه مكان محتوى ملف <b>config.js</b> على جيت هب (امسحي القديم وحطي ده)، واحفظي:</p>
@@ -31,7 +36,7 @@
   <section class="card" id="read">
     <h2>قراءة الرسايل</h2>
     <p class="sub">اكتب الباسورد، والصق نص الإيميل (أو أكتر من إيميل مع بعض).</p>
-    <input type="password" id="pw2" placeholder="الباسورد" autocomplete="current-password">
+    <div class="pwrap"><input type="password" id="pw2" placeholder="الباسورد" autocomplete="current-password" autocapitalize="off" spellcheck="false"><button type="button" class="eye" data-for="pw2" aria-label="إظهار أو إخفاء الباسورد">👁️</button></div>
     <textarea class="box" id="cipher" placeholder="الصق الرسايل المشفّرة هنا..."></textarea>
     <button class="btn" id="dec">فك التشفير</button>
     <div id="results"></div>
@@ -41,7 +46,7 @@
 <script src="config.js"></script>
 <script>
 /* بيتقرا من config.js */
-const WRAPPED_KEY = SITE_CONFIG.WRAPPED_KEY;
+const WRAPPED_KEY = (typeof SITE_CONFIG !== "undefined" ? SITE_CONFIG.WRAPPED_KEY : "");
 
 const $ = id => document.getElementById(id);
 const root = document.documentElement;
@@ -65,7 +70,7 @@ async function copy(id){ const el = $(id); try{ await navigator.clipboard.writeT
 
 $("gen").onclick = async () => {
   const pw = $("pw1").value;
-  if (pw.length < 10) return alert("الباسورد لازم يكون 10 حروف على الأقل.");
+  if (pw.length < 10 || !/[A-Za-z\u0600-\u06FF]/.test(pw) || !/\d/.test(pw)) return alert("الباسورد لازم يكون 10 خانات على الأقل، وفيه حروف وأرقام.");
   $("gen").disabled = true;
   const kp = await crypto.subtle.generateKey({name:"RSA-OAEP", modulusLength:2048, publicExponent:new Uint8Array([1,0,1]), hash:"SHA-256"}, true, ["encrypt","decrypt"]);
   const pubB64 = b64(await crypto.subtle.exportKey("spki", kp.publicKey));
@@ -77,6 +82,10 @@ $("gen").onclick = async () => {
   $("setupOut").hidden = false; $("gen").disabled = false;
 };
 $("copyCfg").onclick = () => copy("cfg");
+document.querySelectorAll(".eye").forEach(b => b.onclick = () => {
+  const i = $(b.dataset.for), show = i.type === "password";
+  i.type = show ? "text" : "password"; b.textContent = show ? "🙈" : "👁️";
+});
 
 $("dec").onclick = async () => {
   $("results").textContent = "";
