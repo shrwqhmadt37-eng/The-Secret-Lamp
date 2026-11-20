@@ -17,7 +17,7 @@
 <body>
 <div class="wrap">
   <div class="top">
-    <a class="ghost" href="owner.html">🔒 صاحب الموقع</a>
+    <span></span>
     <button class="round" id="theme" aria-label="تغيير الوضع">🌙</button>
   </div>
   <h1>فضفض، وأنا سامعك</h1>
@@ -42,7 +42,7 @@
 const CFG = {
   ENCRYPT: true,
   WEB3FORMS_KEY: "47535a4a-cf49-4457-892f-6b184f71d2b2",
-  PUBLIC_KEY: SITE_CONFIG.PUBLIC_KEY,
+  PUBLIC_KEY: (typeof SITE_CONFIG !== "undefined" ? SITE_CONFIG.PUBLIC_KEY : ""),
   MAX: 10000,
   COOLDOWN_SEC: 30
 };
