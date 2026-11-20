@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -17,28 +18,43 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="top"><a class="ghost" href="./">← الصفحة الرئيسية</a><button class="round" id="theme" aria-label="تغيير الوضع">🌙</button></div>
+  <div class="top">
+    <a class="ghost" href="./">← الصفحة الرئيسية</a>
+    <button class="round" id="theme" aria-label="تغيير الوضع">🌙</button>
+  </div>
+
   <h1>صفحة صاحب الموقع</h1>
-  <p class="sub">كل اللي هنا بيشتغل جوه متصفحك، ومفيش حاجة بتتبعت لأي سيرفر.</p>
+  <p class="sub">المفاتيح والرسائل المشفرة بتتعالج داخل متصفحك. لكن تحميل الخطوط من Google واستخدام GitHub Pages بيحتاج اتصالًا بخدمات خارجية.</p>
 
   <section class="card" id="setup">
     <h2>الإعداد (مرة واحدة بس)</h2>
-    <p class="sub">اختار باسورد من حروف وأرقام (10 خانات على الأقل) وافتكره كويس، لأنه لو ضاع الرسايل مش هتتفتح تاني.</p>
-    <div class="pwrap"><input type="password" id="pw1" placeholder="حروف وأرقام (10 خانات على الأقل)" autocomplete="new-password" autocapitalize="off" spellcheck="false"><button type="button" class="eye" data-for="pw1" aria-label="إظهار أو إخفاء الباسورد">👁️</button></div>
+    <p class="sub">اختاري باسورد من حروف وأرقام (10 خانات على الأقل) وافتكريه كويس، لأنه لو ضاع مش هتقدري تفتحي الرسايل.</p>
+
+    <div class="pwrap">
+      <input type="password" id="pw1" placeholder="حروف وأرقام (10 خانات على الأقل)" autocomplete="new-password" autocapitalize="off" spellcheck="false">
+      <button type="button" class="eye" data-for="pw1" aria-label="إظهار أو إخفاء الباسورد">👁️</button>
+    </div>
+
     <button class="btn" id="gen">إنشاء المفاتيح</button>
+
     <div id="setupOut" hidden>
-      <p><b>انسخي النص ده كله</b> وحطيه مكان محتوى ملف <b>config.js</b> على جيت هب (امسحي القديم وحطي ده)، واحفظي:</p>
+      <p><b>انسخي النص ده كله</b> وحطيه مكان محتوى ملف <b>config.js</b> على GitHub، وبعدها احفظي التغييرات:</p>
       <textarea class="box" id="cfg" readonly style="min-height:200px"></textarea>
       <button class="btn" id="copyCfg">نسخ الإعداد</button>
-      <p class="note">آمن إنه يتحط على جيت هب لأن المفتاح الخاص مقفول بالباسورد. احتفظي بنسخة من النص ده والباسورد في مكان تاني.</p>
+      <p class="note">احتفظي بنسخة احتياطية من الإعداد والباسورد في مكان آمن.</p>
     </div>
   </section>
 
   <section class="card" id="read">
     <h2>قراءة الرسايل</h2>
-    <p class="sub">اكتب الباسورد، والصق نص الإيميل (أو أكتر من إيميل مع بعض).</p>
-    <div class="pwrap"><input type="password" id="pw2" placeholder="الباسورد" autocomplete="current-password" autocapitalize="off" spellcheck="false"><button type="button" class="eye" data-for="pw2" aria-label="إظهار أو إخفاء الباسورد">👁️</button></div>
-    <textarea class="box" id="cipher" placeholder="الصق الرسايل المشفّرة هنا..."></textarea>
+    <p class="sub">اكتبي الباسورد، والصقي نص الإيميل المشفر.</p>
+
+    <div class="pwrap">
+      <input type="password" id="pw2" placeholder="الباسورد" autocomplete="current-password" autocapitalize="off" spellcheck="false">
+      <button type="button" class="eye" data-for="pw2" aria-label="إظهار أو إخفاء الباسورد">👁️</button>
+    </div>
+
+    <textarea class="box" id="cipher" placeholder="الصقي الرسايل المشفرة هنا..."></textarea>
     <button class="btn" id="dec">فك التشفير</button>
     <div id="results"></div>
   </section>
@@ -46,69 +62,216 @@
 
 <script src="config.js"></script>
 <script>
-/* بيتقرا من config.js */
-const WRAPPED_KEY = (typeof SITE_CONFIG !== "undefined" ? SITE_CONFIG.WRAPPED_KEY : "");
+/* قراءة الإعدادات من config.js */
+const WRAPPED_KEY = window.SITE_CONFIG?.WRAPPED_KEY || "";
 
 const $ = id => document.getElementById(id);
 const root = document.documentElement;
-function setTheme(t){ root.dataset.theme = t; $("theme").textContent = t === "dark" ? "☀️" : "🌙"; try{ localStorage.setItem("theme", t); }catch(e){} }
-let saved = null; try{ saved = localStorage.getItem("theme"); }catch(e){}
+
+function setTheme(t) {
+  root.dataset.theme = t;
+  $("theme").textContent = t === "dark" ? "☀️" : "🌙";
+  try { localStorage.setItem("theme", t); } catch(e) {}
+}
+
+let saved = null;
+try { saved = localStorage.getItem("theme"); } catch(e) {}
 setTheme(saved || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
-$("theme").onclick = () => setTheme(root.dataset.theme === "dark" ? "light" : "dark");
+
+$("theme").onclick = () =>
+  setTheme(root.dataset.theme === "dark" ? "light" : "dark");
+
 if (WRAPPED_KEY) $("setup").hidden = true;
 
-const b64 = b => { let s = "", a = new Uint8Array(b);
-  for (let i = 0; i < a.length; i += 8192) s += String.fromCharCode.apply(null, a.subarray(i, i + 8192));
-  return btoa(s); };
+const b64 = b => {
+  let s = "";
+  const a = new Uint8Array(b);
+  for (let i = 0; i < a.length; i += 8192)
+    s += String.fromCharCode.apply(null, a.subarray(i, i + 8192));
+  return btoa(s);
+};
+
 const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 
-async function pwKey(pw, salt){
-  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
-  return crypto.subtle.deriveKey({name:"PBKDF2", salt, iterations:600000, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["encrypt","decrypt"]);
+async function pwKey(pw, salt) {
+  const base = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(pw),
+    "PBKDF2",
+    false,
+    ["deriveKey"]
+  );
+
+  return crypto.subtle.deriveKey(
+    {name:"PBKDF2", salt, iterations:600000, hash:"SHA-256"},
+    base,
+    {name:"AES-GCM", length:256},
+    false,
+    ["encrypt","decrypt"]
+  );
 }
-function line(text, err){ const d = document.createElement("div"); d.className = "out"; if (err) d.style.border = "1px solid #c0584d"; d.textContent = text; $("results").appendChild(d); }
-async function copy(id){ const el = $(id); try{ await navigator.clipboard.writeText(el.value); }catch(e){ el.select(); document.execCommand("copy"); } }
+
+function line(text, err) {
+  const d = document.createElement("div");
+  d.className = "out";
+  if (err) d.style.border = "1px solid #c0584d";
+  d.textContent = text;
+  $("results").appendChild(d);
+}
+
+async function copy(id) {
+  const el = $(id);
+  try {
+    await navigator.clipboard.writeText(el.value);
+  } catch(e) {
+    el.select();
+    document.execCommand("copy");
+  }
+}
 
 $("gen").onclick = async () => {
   const pw = $("pw1").value;
-  if (pw.length < 10 || !/[A-Za-z\u0600-\u06FF]/.test(pw) || !/\d/.test(pw)) return alert("الباسورد لازم يكون 10 خانات على الأقل، وفيه حروف وأرقام.");
+
+  if (
+    pw.length < 10 ||
+    !/[A-Za-z\u0600-\u06FF]/.test(pw) ||
+    !/\d/.test(pw)
+  ) {
+    return alert("الباسورد لازم يكون 10 خانات على الأقل، وفيه حروف وأرقام.");
+  }
+
+  if (!crypto.subtle) {
+    return alert("التشفير محتاج تفتحي الموقع من رابط HTTPS.");
+  }
+
   $("gen").disabled = true;
-  const kp = await crypto.subtle.generateKey({name:"RSA-OAEP", modulusLength:2048, publicExponent:new Uint8Array([1,0,1]), hash:"SHA-256"}, true, ["encrypt","decrypt"]);
-  const pubB64 = b64(await crypto.subtle.exportKey("spki", kp.publicKey));
-  const privJson = JSON.stringify(await crypto.subtle.exportKey("jwk", kp.privateKey));
-  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
-  const ct = await crypto.subtle.encrypt({name:"AES-GCM", iv}, await pwKey(pw, salt), new TextEncoder().encode(privJson));
-  const wrapped = b64(salt) + "." + b64(iv) + "." + b64(ct);
-  $("cfg").value = 'const SITE_CONFIG = {\n  PUBLIC_KEY: "' + pubB64 + '",\n  WRAPPED_KEY: "' + wrapped + '"\n};\n';
-  $("setupOut").hidden = false; $("gen").disabled = false;
+
+  try {
+    const kp = await crypto.subtle.generateKey(
+      {
+        name:"RSA-OAEP",
+        modulusLength:2048,
+        publicExponent:new Uint8Array([1,0,1]),
+        hash:"SHA-256"
+      },
+      true,
+      ["encrypt","decrypt"]
+    );
+
+    const pubB64 = b64(await crypto.subtle.exportKey("spki", kp.publicKey));
+    const privJson = JSON.stringify(await crypto.subtle.exportKey("jwk", kp.privateKey));
+
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    const ct = await crypto.subtle.encrypt(
+      {name:"AES-GCM", iv},
+      await pwKey(pw, salt),
+      new TextEncoder().encode(privJson)
+    );
+
+    const wrapped = b64(salt) + "." + b64(iv) + "." + b64(ct);
+
+    $("cfg").value =
+      'window.SITE_CONFIG = {\n' +
+      '  PUBLIC_KEY: "' + pubB64 + '",\n' +
+      '  WRAPPED_KEY: "' + wrapped + '"\n' +
+      '};\n';
+
+    $("setupOut").hidden = false;
+  } catch(e) {
+    alert("حصل خطأ أثناء إنشاء المفاتيح. جربي تاني من رابط HTTPS.");
+  } finally {
+    $("gen").disabled = false;
+  }
 };
+
 $("copyCfg").onclick = () => copy("cfg");
-document.querySelectorAll(".eye").forEach(b => b.onclick = () => {
-  const i = $(b.dataset.for), show = i.type === "password";
-  i.type = show ? "text" : "password"; b.textContent = show ? "🙈" : "👁️";
+
+document.querySelectorAll(".eye").forEach(b => {
+  b.onclick = () => {
+    const i = $(b.dataset.for);
+    const show = i.type === "password";
+    i.type = show ? "text" : "password";
+    b.textContent = show ? "🙈" : "👁️";
+  };
 });
 
 $("dec").onclick = async () => {
   $("results").textContent = "";
-  if (!WRAPPED_KEY) return line("لسه ماعملتش الإعداد: ضيف المفتاح المقفول في WRAPPED_KEY.", true);
+
+  if (!crypto.subtle) {
+    return line("افتحي الموقع من رابط HTTPS عشان التشفير يشتغل.", true);
+  }
+
+  if (!WRAPPED_KEY) {
+    return line("ملف config.js مش متظبط أو المفتاح مش موجود.", true);
+  }
+
   let priv;
-  try{
+
+  try {
     const [s, i, c] = WRAPPED_KEY.split(".");
-    const json = await crypto.subtle.decrypt({name:"AES-GCM", iv:unb64(i)}, await pwKey($("pw2").value, unb64(s)), unb64(c));
-    priv = await crypto.subtle.importKey("jwk", JSON.parse(new TextDecoder().decode(json)), {name:"RSA-OAEP", hash:"SHA-256"}, false, ["decrypt"]);
-  }catch(e){ return line("الباسورد غلط.", true); }
+
+    if (!s || !i || !c) throw new Error();
+
+    const json = await crypto.subtle.decrypt(
+      {name:"AES-GCM", iv:unb64(i)},
+      await pwKey($("pw2").value, unb64(s)),
+      unb64(c)
+    );
+
+    priv = await crypto.subtle.importKey(
+      "jwk",
+      JSON.parse(new TextDecoder().decode(json)),
+      {name:"RSA-OAEP", hash:"SHA-256"},
+      false,
+      ["decrypt"]
+    );
+  } catch(e) {
+    return line("الباسورد غلط أو بيانات المفتاح غير سليمة.", true);
+  }
+
   const items = [...$("cipher").value.matchAll(/FD1\.([^~]+)~/g)];
-  if (!items.length) return line("مفيش رسايل مشفّرة في النص اللي لصقته.", true);
+
+  if (!items.length) {
+    return line("مفيش رسايل مشفرة في النص اللي لصقتيه.", true);
+  }
+
   let n = 0;
-  for (const m of items){
+
+  for (const m of items) {
     n++;
-    try{
+
+    try {
       const [k, iv, ct] = m[1].replace(/\s+/g, "").split(".");
-      const raw = await crypto.subtle.decrypt({name:"RSA-OAEP"}, priv, unb64(k));
-      const aes = await crypto.subtle.importKey("raw", raw, "AES-GCM", false, ["decrypt"]);
-      const pt = await crypto.subtle.decrypt({name:"AES-GCM", iv:unb64(iv)}, aes, unb64(ct));
+
+      if (!k || !iv || !ct) throw new Error();
+
+      const raw = await crypto.subtle.decrypt(
+        {name:"RSA-OAEP"},
+        priv,
+        unb64(k)
+      );
+
+      const aes = await crypto.subtle.importKey(
+        "raw",
+        raw,
+        "AES-GCM",
+        false,
+        ["decrypt"]
+      );
+
+      const pt = await crypto.subtle.decrypt(
+        {name:"AES-GCM", iv:unb64(iv)},
+        aes,
+        unb64(ct)
+      );
+
       line("رسالة " + n + ":\n" + new TextDecoder().decode(pt));
-    }catch(e){ line("رسالة " + n + ": مقدرتش أفكها (النص ناقص أو من مفتاح قديم).", true); }
+    } catch(e) {
+      line("رسالة " + n + ": مقدرتش أفكها (النص ناقص أو مش متوافق مع المفتاح).", true);
+    }
   }
 };
 </script>
