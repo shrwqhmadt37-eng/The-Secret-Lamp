@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>المصباح السري🧞</title>
-<link rel="icon" href="photo.jpg" type="image/png">
+<link rel="icon" href="photo.jpg" type="image/jpeg">
 <meta name="theme-color" content="#2f7f79">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -33,19 +33,20 @@
     </div>
   </div>
   <div class="status" id="status" hidden></div>
-  <p class="note">الرسالة بتتشفّر في جهازك قبل ما تتبعت، فمحدش غير صاحب الصفحة يقدر يقراها. لو إنت في خطر حقيقي، كلّم حد قريب منك أو متخصص.</p>
+  <p class="note">رسالتك بتوصل لصاحب الصفحة بس، ومبنسجّلش اسمك ولا أي بيانات عنك. لو إنت في خطر حقيقي، كلّم حد قريب منك أو متخصص.</p>
+  <p class="note" style="text-align:center">نسخة 2 · من غير تشفير</p>
 </div>
 
 <script>
-/* ===== الإعدادات: غيّري القيم دي بس ===== */
+/* ===== الإعدادات ===== */
 const CFG = {
-  ENCRYPT:false,                          // true = تشفير (الأقوى) | false = إرسال عادي للإيميل
-  WEB3FORMS_KEY: "47535a4a-cf49-4457-892f-6b184f71d2b2", // من web3forms.com
-  PUBLIC_KEY: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA8QpJBenn0Q0iK4+01Ej+3ZFPMM0fpT83Nj22CE+UjOf+fHZGWWirfWD6fMS8aF+ZkyZexyiTtRuwKGXRjhTWbmV8uZ6rkDOxZoU/RVRPJmn4rqEF9/9VxyroMzAWMRAOMYdRCm9phEwrSfVA8ZBnAK8IVSCJbChFb7agMtqlfNm0PjgsP25lrnOpKYme+YsWcjh/MVOojNm4KM9oge03jHxHblUy6gp7W+xwZOeUVyZyIU3LNydkZsTYZWm5fxietyrXWV2gGkOA+R0df/gPHz9JvLFRViWJAFGZRe003lNhHx4w9+4DVud9MdcTp60CWqLJk+sEclLHAKZuyDrQpwIDAQAB",       // من صفحة owner.html
+  ENCRYPT: false,
+  WEB3FORMS_KEY: "47535a4a-cf49-4457-892f-6b184f71d2b2",
+  PUBLIC_KEY: "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA8QpJBenn0Q0iK4+01Ej+3ZFPMM0fpT83Nj22CE+UjOf+fHZGWWirfWD6fMS8aF+ZkyZexyiTtRuwKGXRjhTWbmV8uZ6rkDOxZoU/RVRPJmn4rqEF9/9VxyroMzAWMRAOMYdRCm9phEwrSfVA8ZBnAK8IVSCJbChFb7agMtqlfNm0PjgsP25lrnOpKYme+YsWcjh/MVOojNm4KM9oge03jHxHblUy6gp7W+xwZOeUVyZyIU3LNydkZsTYZWm5fxietyrXWV2gGkOA+R0df/gPHz9JvLFRViWJAFGZRe003lNhHx4w9+4DVud9MdcTp60CWqLJk+sEclLHAKZuyDrQpwIDAQAB",
   MAX: 10000,
   COOLDOWN_SEC: 30
 };
-/* ======================================= */
+/* ===================== */
 
 const $ = id => document.getElementById(id);
 const msg = $("msg"), send = $("send"), statusEl = $("status");
@@ -104,14 +105,16 @@ send.onclick = async () => {
     fd.append("subject", "رسالة جديدة مجهولة");
     fd.append("from_name", "فضفض");
     fd.append("message", body);
-    const r = await fetch("https://api.web3forms.com/submit", {method:"POST", body:fd});
-    const j = await r.json();
+    const r = await fetch("https://api.web3forms.com/submit", {method:"POST", headers:{"Accept":"application/json"}, body:fd});
+    const t = await r.text();
+    let j; try{ j = JSON.parse(t); }catch(e){ throw new Error("HTTP " + r.status + " - " + t.slice(0,150)); }
     if (!j.success) throw new Error(j.message || "failed");
     try{ localStorage.setItem("fd_last", Date.now()); }catch(e){}
     msg.value = ""; update(); $("emojis").classList.remove("open");
     show("وصلت رسالتك 🤍 شكرًا إنك فضفضت.");
   }catch(e){
-    show("حصلت مشكلة وماتبعتش الرسالة. راجع النت وجرّب تاني.", true); send.disabled = false;
+    console.error(e);
+    show("حصلت مشكلة وماتبعتش الرسالة. راجع النت وجرّب تاني.\n(" + e.message + ")", true); send.disabled = false;
   }
 };
 
